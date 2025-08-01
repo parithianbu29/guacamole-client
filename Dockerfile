@@ -24,11 +24,11 @@
 # Use args for Tomcat image label to allow image builder to choose alternatives
 # such as `--build-arg TOMCAT_JRE=jre8-alpine`
 #
-ARG TOMCAT_VERSION=8.5
-ARG TOMCAT_JRE=jdk8
+ARG TOMCAT_VERSION=9.0
+ARG TOMCAT_JRE=jdk11
 
 # Use official maven image for the build
-FROM maven:3-eclipse-temurin-8-focal AS builder
+FROM maven:3-eclipse-temurin-21 AS builder
 
 # Use Mozilla's Firefox PPA (newer Ubuntu lacks a "firefox-esr" package and
 # provides only a transitional "firefox" package that actually requires Snap
@@ -52,8 +52,8 @@ ARG MAVEN_ARGUMENTS="-DskipTests=false"
 
 # Versions of JDBC drivers to bundle within image
 ARG MSSQL_JDBC_VERSION=9.4.1
-ARG MYSQL_JDBC_VERSION=8.0.33
-ARG PGSQL_JDBC_VERSION=42.6.0
+ARG MYSQL_JDBC_VERSION=9.3.0
+ARG PGSQL_JDBC_VERSION=42.7.7
 
 # Build environment variables
 ENV \
@@ -76,7 +76,7 @@ FROM tomcat:${TOMCAT_VERSION}-${TOMCAT_JRE}
 # Install XMLStarlet for server.xml alterations and unzip for LOGBACK_LEVEL case
 RUN apt-get update -qq \
     && apt-get install -y xmlstarlet unzip\
-    && rm -rf /var/lib/apt/lists/* 
+    && rm -rf /var/lib/apt/lists/*
 
 # This is where the build artifacts go in the runtime image
 WORKDIR /opt/guacamole
@@ -85,7 +85,7 @@ WORKDIR /opt/guacamole
 COPY --from=builder /opt/guacamole/ .
 
 # Create a new user guacamole
-ARG UID=1000
+ARG UID=10000
 ARG GID=10001
 RUN groupadd --gid $GID guacamole
 RUN useradd --system --create-home --shell /usr/sbin/nologin --uid $UID --gid $GID guacamole
