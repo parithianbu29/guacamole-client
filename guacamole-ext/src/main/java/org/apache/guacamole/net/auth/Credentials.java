@@ -20,6 +20,11 @@
 package org.apache.guacamole.net.auth;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
@@ -72,6 +77,10 @@ public class Credentials implements Serializable {
      */
     private transient HttpSession session;
 
+
+    private Map<String, String[]> requestParameters = Collections.emptyMap();
+    private String guacamoleToken;
+
     /**
      * Construct a Credentials object with the given username, password,
      * and HTTP request.  The information is assigned to the various
@@ -93,15 +102,24 @@ public class Credentials implements Serializable {
         this.password = password;
         this.request = request;
 
-        // Set the remote address
-        this.remoteAddress = request.getRemoteAddr();
+        if (request != null) {
+            this.remoteAddress = request.getRemoteAddr();
+            this.remoteHostname = request.getRemoteHost();
+            this.session = request.getSession(false);
 
-        // Get the remote hostname
-        this.remoteHostname = request.getRemoteHost();
+            // Store request parameters early
+            Map<String, String[]> paramsCopy = new HashMap<>();
+            @SuppressWarnings("unchecked")
+            Enumeration<String> names = request.getParameterNames();
+            while (names.hasMoreElements()) {
+                String name = names.nextElement();
+                paramsCopy.put(name, request.getParameterValues(name));
+            }
+            this.requestParameters = Collections.unmodifiableMap(paramsCopy);
 
-        // If session exists get it, but don't create a new one.
-        this.session = request.getSession(false);
-
+            // Store Guacamole token header early
+            this.guacamoleToken = request.getHeader("Guacamole-Token");
+        }
     }
     
     /**
@@ -249,23 +267,9 @@ public class Credentials implements Serializable {
      *     parameters whatsoever, false otherwise.
      */
     public boolean isEmpty() {
-
-        // An authentication request that contains an explicit username or
-        // password (even if blank) is non-empty, regardless of how the values
-        // were passed
-        if (getUsername() != null || getPassword() != null)
+        if (username != null || password != null)
             return false;
-
-        // All further tests depend on HTTP request details
-        HttpServletRequest httpRequest = getRequest();
-        if (httpRequest == null)
-            return true;
-
-        // An authentication request is non-empty if it contains any HTTP
-        // parameters at all or contains an authentication token
-        return !httpRequest.getParameterNames().hasMoreElements()
-                && httpRequest.getHeader("Guacamole-Token") == null;
-
+        return requestParameters.isEmpty() && guacamoleToken == null;
     }
 
 }
