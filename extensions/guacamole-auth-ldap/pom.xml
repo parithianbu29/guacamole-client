@@ -58,7 +58,7 @@
                     Replace slightly older commons-lang3 (3.13.0) with latest
                     compatible version (3.14.0) so that we don't need two copies
                     of the same license information.
-		-->
+		        -->
 
                 <!--
                     Replace vulnerable version of Apache MINA until upstream
@@ -67,7 +67,7 @@
                 <exclusion>
                     <groupId>org.apache.mina</groupId>
                     <artifactId>mina-core</artifactId>
-	        </exclusion>
+	    	    </exclusion>
 
                 <exclusion>
                     <groupId>org.apache.commons</groupId>
